@@ -780,7 +780,6 @@ dependencies = [
  "colored",
  "futures",
  "indicatif",
- "once_cell",
  "rustls",
  "serde",
  "serde_json",

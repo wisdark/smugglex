@@ -24,7 +24,7 @@ pub async fn fetch_cookies(
     for line in response.lines() {
         if line.len() >= 11
             && line.as_bytes()[..11].eq_ignore_ascii_case(b"set-cookie:")
-            && let Some(cookie_value) = line.split(':').nth(1)
+            && let Some((_, cookie_value)) = line.split_once(':')
         {
             // Extract just the cookie name=value, stop at semicolon
             let cookie_part = cookie_value

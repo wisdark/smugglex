@@ -107,12 +107,10 @@ fn identify_proxy(headers: &HashMap<String, String>) -> ProxyType {
     if headers.get("x-varnish").is_some() {
         return ProxyType::Varnish;
     }
-    if headers.contains_key("x-served-by") {
-        if let Some(val) = headers.get("x-served-by") {
-            if val.contains("cache-") {
-                return ProxyType::Fastly;
-            }
-        }
+    if let Some(val) = headers.get("x-served-by")
+        && val.contains("cache-")
+    {
+        return ProxyType::Fastly;
     }
     if let Some(via) = headers.get("via") {
         let via_lower = via.to_lowercase();

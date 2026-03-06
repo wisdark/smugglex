@@ -1,7 +1,6 @@
 use colored::*;
-use once_cell::sync::Lazy;
 use rustls::pki_types::ServerName;
-use std::sync::Arc;
+use std::sync::{Arc, LazyLock};
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 use tokio::net::TcpStream;
@@ -10,7 +9,7 @@ use tokio_rustls::TlsConnector;
 use crate::error::Result;
 
 // Lazy static TLS configuration to avoid recreating for each request
-static TLS_CONFIG: Lazy<Arc<rustls::ClientConfig>> = Lazy::new(|| {
+static TLS_CONFIG: LazyLock<Arc<rustls::ClientConfig>> = LazyLock::new(|| {
     let mut root_store = rustls::RootCertStore::empty();
     root_store.extend(webpki_roots::TLS_SERVER_ROOTS.iter().cloned());
 
@@ -59,13 +58,22 @@ pub async fn send_request(
     }
 
     let start = Instant::now();
+    let timeout_dur = Duration::from_secs(timeout);
 
-    let mut stream = get_stream(host, port, use_tls).await?;
-    stream.write_all(request.as_bytes()).await?;
+    let result = tokio::time::timeout(timeout_dur, async {
+        let mut stream = get_stream(host, port, use_tls).await?;
+        stream.write_all(request.as_bytes()).await?;
 
-    let mut buf = Vec::with_capacity(8192);
-    tokio::time::timeout(Duration::from_secs(timeout), stream.read_to_end(&mut buf)).await??;
-    let response_str = String::from_utf8_lossy(&buf).into_owned();
+        let mut buf = Vec::with_capacity(8192);
+        stream.read_to_end(&mut buf).await?;
+        Ok::<Vec<u8>, crate::error::SmugglexError>(buf)
+    })
+    .await??;
+
+    let response_str = match String::from_utf8(result) {
+        Ok(s) => s,
+        Err(e) => String::from_utf8_lossy(e.as_bytes()).into_owned(),
+    };
 
     let duration = start.elapsed();
 

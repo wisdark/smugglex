@@ -136,23 +136,23 @@ impl Mutator {
             let trimmed = rest.trim_start();
             let skip_ws = rest.len() - trimmed.len();
             let num_end = trimmed.find(|c: char| !c.is_ascii_digit()).unwrap_or(trimmed.len());
-            if num_end > 0 {
-                if let Ok(val) = trimmed[..num_end].parse::<i64>() {
-                    let mutation_type = self.rand_index(4);
-                    let new_val = match mutation_type {
-                        0 => format!("0{}", val),  // leading zero
-                        1 => format!("{}", val + 1), // off-by-one up
-                        2 => format!("{} ", val),   // trailing space
-                        3 => format!(" {}", val),   // leading space
-                        _ => format!("{}", val),
-                    };
-                    let value_start = after_header + skip_ws;
-                    let value_end = value_start + num_end;
-                    let mut result = payload[..value_start].to_string();
-                    result.push_str(&new_val);
-                    result.push_str(&payload[value_end..]);
-                    return result;
-                }
+            if num_end > 0
+                && let Ok(val) = trimmed[..num_end].parse::<i64>()
+            {
+                let mutation_type = self.rand_index(4);
+                let new_val = match mutation_type {
+                    0 => format!("0{}", val),  // leading zero
+                    1 => format!("{}", val + 1), // off-by-one up
+                    2 => format!("{} ", val),   // trailing space
+                    3 => format!(" {}", val),   // leading space
+                    _ => format!("{}", val),
+                };
+                let value_start = after_header + skip_ws;
+                let value_end = value_start + num_end;
+                let mut result = payload[..value_start].to_string();
+                result.push_str(&new_val);
+                result.push_str(&payload[value_end..]);
+                return result;
             }
         }
         payload.to_string()
