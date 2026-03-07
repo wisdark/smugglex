@@ -506,6 +506,7 @@ async fn test_run_checks_for_type_not_vulnerable() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -543,6 +544,7 @@ async fn test_run_checks_for_type_vulnerable_timeout_status() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -581,6 +583,7 @@ async fn test_run_checks_for_type_vulnerable_timing() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -620,6 +623,7 @@ async fn test_run_checks_for_type_multiple_payloads() {
         export_dir: None,
         current_check: 2,
         total_checks: 5,
+        delay: 0,
     })
     .await;
 
@@ -658,6 +662,7 @@ async fn test_run_checks_for_type_with_export_dir() {
         export_dir: Some(temp_dir.to_str().unwrap()),
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -695,6 +700,7 @@ async fn test_run_checks_for_type_verbose_mode() {
         export_dir: None,
         current_check: 5,
         total_checks: 5,
+        delay: 0,
     })
     .await;
 
@@ -729,6 +735,7 @@ async fn test_run_checks_for_type_with_custom_path() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -759,6 +766,7 @@ async fn test_run_checks_for_type_empty_payloads() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -796,6 +804,7 @@ async fn test_run_checks_for_type_different_check_names() {
             export_dir: None,
             current_check: 1,
             total_checks: 1,
+        delay: 0,
         })
         .await;
 
@@ -857,6 +866,7 @@ async fn test_run_checks_for_type_408_status_code() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -942,6 +952,7 @@ async fn test_flaky_504_not_confirmed() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -996,6 +1007,7 @@ async fn test_baseline_504_not_flagged() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -1060,6 +1072,7 @@ async fn test_connection_timeout_strict_confirmation() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -1125,6 +1138,7 @@ async fn test_confirmed_vulnerability_high_confidence() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 
@@ -1195,6 +1209,7 @@ async fn test_confirmed_vulnerability_medium_confidence() {
         export_dir: None,
         current_check: 1,
         total_checks: 1,
+        delay: 0,
     })
     .await;
 

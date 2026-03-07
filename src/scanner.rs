@@ -27,6 +27,7 @@ pub struct CheckParams<'a> {
     pub export_dir: Option<&'a str>,
     pub current_check: usize,
     pub total_checks: usize,
+    pub delay: u64,
 }
 
 struct VulnerabilityInfo {
@@ -233,6 +234,10 @@ pub async fn run_checks_for_type(params: CheckParams<'_>) -> Result<CheckResult>
     let timing_threshold = normal_duration.as_millis() * TIMING_MULTIPLIER;
 
     for (i, attack_request) in params.attack_requests.iter().enumerate() {
+        if params.delay > 0 && i > 0 {
+            tokio::time::sleep(Duration::from_millis(params.delay)).await;
+        }
+
         if !params.verbose {
             let current = i + 1;
             let percentage = (current as u32 * 100) / total_requests as u32;

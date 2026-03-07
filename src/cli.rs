@@ -1,4 +1,5 @@
 use clap::{Parser, ValueEnum};
+use colored::control;
 use std::fmt;
 
 /// Output format type
@@ -27,7 +28,7 @@ impl OutputFormat {
 }
 
 /// A powerful HTTP Request Smuggling testing tool for detecting CL.TE, TE.CL, TE.TE, H2C, and H2 smuggling vulnerabilities
-#[derive(Parser, Debug)]
+#[derive(Parser, Debug, Clone)]
 #[command(author, version, about, long_about = None, disable_version_flag = true, before_help = r#"
 
         ████
@@ -115,4 +116,29 @@ pub struct Cli {
     /// Wordlist file for path-fuzz exploit (one path per line)
     #[arg(help_heading = "EXPLOIT", long = "exploit-wordlist")]
     pub exploit_wordlist: Option<String>,
+
+    /// Print version information
+    #[arg(short = 'v', long = "version", action = clap::ArgAction::SetTrue)]
+    pub version: bool,
+
+    /// Delay between requests in milliseconds (rate limiting)
+    #[arg(help_heading = "REQUEST", short = 'd', long = "delay", default_value_t = 0)]
+    pub delay: u64,
+
+    /// Disable colored output
+    #[arg(help_heading = "OUTPUT", long = "no-color", action = clap::ArgAction::SetTrue)]
+    pub no_color: bool,
+
+    /// Number of URLs to scan concurrently
+    #[arg(help_heading = "REQUEST", short = 'j', long = "concurrency", default_value_t = 1)]
+    pub concurrency: usize,
+}
+
+impl Cli {
+    /// Apply global settings like no-color mode
+    pub fn apply_global_settings(&self) {
+        if self.no_color {
+            control::set_override(false);
+        }
+    }
 }

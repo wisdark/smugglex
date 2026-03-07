@@ -42,6 +42,12 @@ struct ExploitParams<'a> {
 #[tokio::main]
 async fn main() -> Result<()> {
     let cli = Cli::parse();
+    cli.apply_global_settings();
+
+    if cli.version {
+        println!("smugglex {}", env!("CARGO_PKG_VERSION"));
+        return Ok(());
+    }
 
     let urls = resolve_urls(&cli)?;
     if urls.is_empty() {
@@ -49,12 +55,34 @@ async fn main() -> Result<()> {
         return Ok(());
     }
 
-    for target_url in urls {
-        if let Err(e) = process_url(&target_url, &cli).await {
-            log(
-                LogLevel::Error,
-                &format!("error processing {}: {}", target_url, e),
-            );
+    if cli.concurrency > 1 {
+        // Process URLs concurrently in chunks
+        for chunk in urls.chunks(cli.concurrency) {
+            let mut handles = Vec::new();
+            for target_url in chunk {
+                let url = target_url.clone();
+                let cli_ref = cli.clone();
+                handles.push(tokio::spawn(async move {
+                    if let Err(e) = process_url(&url, &cli_ref).await {
+                        log(
+                            LogLevel::Error,
+                            &format!("error processing {}: {}", url, e),
+                        );
+                    }
+                }));
+            }
+            for handle in handles {
+                let _ = handle.await;
+            }
+        }
+    } else {
+        for target_url in urls {
+            if let Err(e) = process_url(&target_url, &cli).await {
+                log(
+                    LogLevel::Error,
+                    &format!("error processing {}: {}", target_url, e),
+                );
+            }
         }
     }
 
@@ -207,6 +235,7 @@ async fn process_url(target_url: &str, cli: &Cli) -> Result<()> {
             export_dir: cli.export_dir.as_deref(),
             current_check: i + 1,
             total_checks,
+            delay: cli.delay,
         };
 
         let result = run_checks_for_type(params).await?;
