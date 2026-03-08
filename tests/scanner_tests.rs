@@ -11,7 +11,7 @@
 //! - Integration tests for run_checks_for_type function
 //! - False positive reduction: multi-baseline, confirmation retries, baseline status code context
 
-use smugglex::scanner::{run_checks_for_type, CheckParams, TIMING_MULTIPLIER, MIN_DELAY_MS, BASELINE_COUNT, CONFIRMATION_RETRIES};
+use smugglex::scanner::{run_checks_for_type, CheckParams, TIMING_MULTIPLIER, MIN_DELAY_MS, DEFAULT_BASELINE_COUNT, CONFIRMATION_RETRIES};
 use smugglex::model::CheckResult;
 use std::time::Duration;
 use chrono::Utc;
@@ -38,7 +38,7 @@ fn test_min_delay_constant() {
 
 #[test]
 fn test_baseline_count_constant() {
-    assert_eq!(BASELINE_COUNT, 3, "Baseline count should be 3");
+    assert_eq!(DEFAULT_BASELINE_COUNT, 3, "Baseline count should be 3");
 }
 
 #[test]
@@ -413,7 +413,7 @@ async fn start_normal_server() -> (String, u16, tokio::task::JoinHandle<()>) {
 }
 
 /// Helper function to start a mock HTTP server that responds with timeout status
-/// after BASELINE_COUNT normal requests. Also responds with 504 on confirmation retries.
+/// after DEFAULT_BASELINE_COUNT normal requests. Also responds with 504 on confirmation retries.
 async fn start_timeout_server() -> (String, u16, tokio::task::JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -431,9 +431,9 @@ async fn start_timeout_server() -> (String, u16, tokio::task::JoinHandle<()>) {
 
                     let n = count.fetch_add(1, Ordering::SeqCst) + 1;
 
-                    // First BASELINE_COUNT requests (baseline) return 200 OK
+                    // First DEFAULT_BASELINE_COUNT requests (baseline) return 200 OK
                     // Subsequent requests (attack + confirmation) return 504
-                    let response = if n <= BASELINE_COUNT {
+                    let response = if n <= DEFAULT_BASELINE_COUNT {
                         "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!"
                     } else {
                         "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n"
@@ -448,7 +448,7 @@ async fn start_timeout_server() -> (String, u16, tokio::task::JoinHandle<()>) {
 }
 
 /// Helper function to start a mock HTTP server that responds slowly
-/// after BASELINE_COUNT normal requests. Also delays on confirmation retries.
+/// after DEFAULT_BASELINE_COUNT normal requests. Also delays on confirmation retries.
 async fn start_slow_server() -> (String, u16, tokio::task::JoinHandle<()>) {
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let addr = listener.local_addr().unwrap();
@@ -466,9 +466,9 @@ async fn start_slow_server() -> (String, u16, tokio::task::JoinHandle<()>) {
 
                     let n = count.fetch_add(1, Ordering::SeqCst) + 1;
 
-                    // First BASELINE_COUNT requests (baseline) return immediately
+                    // First DEFAULT_BASELINE_COUNT requests (baseline) return immediately
                     // Subsequent requests (attack + confirmation) delay for 2 seconds
-                    if n > BASELINE_COUNT {
+                    if n > DEFAULT_BASELINE_COUNT {
                         tokio::time::sleep(Duration::from_millis(2000)).await;
                     }
 
@@ -507,6 +507,7 @@ async fn test_run_checks_for_type_not_vulnerable() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -545,6 +546,7 @@ async fn test_run_checks_for_type_vulnerable_timeout_status() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -584,6 +586,7 @@ async fn test_run_checks_for_type_vulnerable_timing() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -624,6 +627,7 @@ async fn test_run_checks_for_type_multiple_payloads() {
         current_check: 2,
         total_checks: 5,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -663,6 +667,7 @@ async fn test_run_checks_for_type_with_export_dir() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -701,6 +706,7 @@ async fn test_run_checks_for_type_verbose_mode() {
         current_check: 5,
         total_checks: 5,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -736,6 +742,7 @@ async fn test_run_checks_for_type_with_custom_path() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -767,6 +774,7 @@ async fn test_run_checks_for_type_empty_payloads() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -805,6 +813,7 @@ async fn test_run_checks_for_type_different_check_names() {
             current_check: 1,
             total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
         })
         .await;
 
@@ -834,8 +843,8 @@ async fn test_run_checks_for_type_408_status_code() {
 
                     let n = count.fetch_add(1, Ordering::SeqCst) + 1;
 
-                    // First BASELINE_COUNT requests return 200, rest return 408
-                    let response = if n <= BASELINE_COUNT {
+                    // First DEFAULT_BASELINE_COUNT requests return 200, rest return 408
+                    let response = if n <= DEFAULT_BASELINE_COUNT {
                         "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!"
                     } else {
                         "HTTP/1.1 408 Request Timeout\r\nContent-Length: 0\r\n\r\n"
@@ -867,6 +876,7 @@ async fn test_run_checks_for_type_408_status_code() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -919,9 +929,9 @@ async fn test_flaky_504_not_confirmed() {
                     // Baseline (1-3): 200 OK
                     // First attack (4): 504 (triggers initial detection)
                     // Confirmation retries (5+): 200 OK (not reproduced)
-                    let response = if n <= BASELINE_COUNT {
+                    let response = if n <= DEFAULT_BASELINE_COUNT {
                         "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!"
-                    } else if n == BASELINE_COUNT + 1 {
+                    } else if n == DEFAULT_BASELINE_COUNT + 1 {
                         "HTTP/1.1 504 Gateway Timeout\r\nContent-Length: 0\r\n\r\n"
                     } else {
                         "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!"
@@ -953,6 +963,7 @@ async fn test_flaky_504_not_confirmed() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -1008,6 +1019,7 @@ async fn test_baseline_504_not_flagged() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -1041,7 +1053,7 @@ async fn test_connection_timeout_strict_confirmation() {
                     // Baseline (1-3): normal response
                     // First attack (4): delay 6 seconds (will cause timeout with 5s timeout)
                     // Confirmation retries (5+): normal response
-                    if n == BASELINE_COUNT + 1 {
+                    if n == DEFAULT_BASELINE_COUNT + 1 {
                         tokio::time::sleep(Duration::from_secs(6)).await;
                     }
 
@@ -1073,6 +1085,7 @@ async fn test_connection_timeout_strict_confirmation() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -1103,7 +1116,7 @@ async fn test_confirmed_vulnerability_high_confidence() {
 
                     let n = count.fetch_add(1, Ordering::SeqCst) + 1;
 
-                    if n <= BASELINE_COUNT {
+                    if n <= DEFAULT_BASELINE_COUNT {
                         // Baseline: fast 200 OK
                         let response = "HTTP/1.1 200 OK\r\nContent-Length: 13\r\n\r\nHello, World!";
                         let _ = socket.write_all(response.as_bytes()).await;
@@ -1139,6 +1152,7 @@ async fn test_confirmed_vulnerability_high_confidence() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 
@@ -1176,7 +1190,7 @@ async fn test_confirmed_vulnerability_medium_confidence() {
 
                     // Baseline: 400ms delay (threshold = 1200ms, 6x = 2400ms)
                     // Attack + confirmation: 2000ms delay (>1200ms but <2400ms -> Medium)
-                    if n > BASELINE_COUNT {
+                    if n > DEFAULT_BASELINE_COUNT {
                         tokio::time::sleep(Duration::from_millis(2000)).await;
                     } else {
                         tokio::time::sleep(Duration::from_millis(400)).await;
@@ -1210,6 +1224,7 @@ async fn test_confirmed_vulnerability_medium_confidence() {
         current_check: 1,
         total_checks: 1,
         delay: 0,
+        baseline_count: DEFAULT_BASELINE_COUNT,
     })
     .await;
 

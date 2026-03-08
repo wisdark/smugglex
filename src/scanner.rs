@@ -10,7 +10,7 @@ use std::time::Duration;
 // Detection thresholds
 pub const TIMING_MULTIPLIER: u128 = 3; // Flag if response is 3x slower than baseline
 pub const MIN_DELAY_MS: u128 = 1000; // Minimum delay to consider (1 second)
-pub const BASELINE_COUNT: usize = 3; // Number of baseline measurements
+pub const DEFAULT_BASELINE_COUNT: usize = 3; // Default number of baseline measurements
 pub const CONFIRMATION_RETRIES: usize = 2; // Number of confirmation retries
 
 /// Parameters for running vulnerability checks
@@ -28,6 +28,7 @@ pub struct CheckParams<'a> {
     pub current_check: usize,
     pub total_checks: usize,
     pub delay: u64,
+    pub baseline_count: usize,
 }
 
 struct VulnerabilityInfo {
@@ -42,7 +43,7 @@ struct BaselineMeasurement {
     observed_status_codes: Vec<Option<u16>>,
 }
 
-/// Measure baseline by sending BASELINE_COUNT normal requests and computing median timing.
+/// Measure baseline by sending normal requests and computing median timing.
 /// Requests are sent concurrently for faster baseline establishment.
 async fn measure_baseline(
     host: &str,
@@ -51,6 +52,7 @@ async fn measure_baseline(
     timeout: u64,
     verbose: bool,
     use_tls: bool,
+    baseline_count: usize,
 ) -> Result<BaselineMeasurement> {
     let normal_request = format!(
         "GET {} HTTP/1.1\r\nHost: {}\r\nConnection: close\r\n\r\n",
@@ -58,8 +60,8 @@ async fn measure_baseline(
     );
 
     // Send baseline requests concurrently
-    let mut futures = Vec::with_capacity(BASELINE_COUNT);
-    for _ in 0..BASELINE_COUNT {
+    let mut futures = Vec::with_capacity(baseline_count);
+    for _ in 0..baseline_count {
         futures.push(send_request(
             host,
             port,
@@ -72,8 +74,8 @@ async fn measure_baseline(
 
     let results = futures::future::join_all(futures).await;
 
-    let mut durations = Vec::with_capacity(BASELINE_COUNT);
-    let mut observed_status_codes = Vec::with_capacity(BASELINE_COUNT);
+    let mut durations = Vec::with_capacity(baseline_count);
+    let mut observed_status_codes = Vec::with_capacity(baseline_count);
     let mut last_status = String::new();
 
     for result in results {
@@ -225,6 +227,7 @@ pub async fn run_checks_for_type(params: CheckParams<'_>) -> Result<CheckResult>
         params.timeout,
         params.verbose,
         params.use_tls,
+        params.baseline_count,
     )
     .await?;
     let normal_status = baseline.status;

@@ -222,6 +222,10 @@ async fn process_url(target_url: &str, cli: &Cli) -> Result<()> {
             payloads = mutator.mutate_payloads(&payloads);
         }
 
+        if let Some(max) = cli.max_payloads {
+            payloads.truncate(max);
+        }
+
         let params = CheckParams {
             pb: &pb,
             check_name,
@@ -236,6 +240,7 @@ async fn process_url(target_url: &str, cli: &Cli) -> Result<()> {
             current_check: i + 1,
             total_checks,
             delay: cli.delay,
+            baseline_count: cli.baseline_count,
         };
 
         let result = run_checks_for_type(params).await?;
@@ -342,6 +347,9 @@ fn log_plain_results(results: &[CheckResult], vulnerable_count: usize) {
             LogLevel::Warning,
             &format!("smuggling found {} vulnerability(ies)", vulnerable_count),
         );
+        if smugglex::utils::is_quiet() {
+            return;
+        }
         println!();
         for result in results.iter().filter(|r| r.vulnerable) {
             println!(

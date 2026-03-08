@@ -3,6 +3,19 @@ use crate::http::send_request;
 use chrono::Local;
 use colored::{ColoredString, Colorize};
 use std::fs;
+use std::sync::atomic::{AtomicBool, Ordering};
+
+static QUIET: AtomicBool = AtomicBool::new(false);
+
+/// Enable or disable quiet mode globally
+pub fn set_quiet(enabled: bool) {
+    QUIET.store(enabled, Ordering::Relaxed);
+}
+
+/// Check if quiet mode is enabled
+pub fn is_quiet() -> bool {
+    QUIET.load(Ordering::Relaxed)
+}
 
 /// Fetch cookies from the target server
 pub async fn fetch_cookies(
@@ -103,6 +116,9 @@ impl LogLevel {
 
 /// Print a log message with timestamp and level prefix
 pub fn log(level: LogLevel, message: &str) {
+    if is_quiet() && matches!(level, LogLevel::Info) {
+        return;
+    }
     let time = Local::now().format("%I:%M%p").to_string().to_uppercase();
     println!("{} {} {}", time.dimmed(), level.prefix(), message);
 }

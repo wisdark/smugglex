@@ -125,6 +125,10 @@ pub struct Cli {
     #[arg(help_heading = "REQUEST", short = 'd', long = "delay", default_value_t = 0)]
     pub delay: u64,
 
+    /// Quiet mode (only show vulnerabilities)
+    #[arg(help_heading = "OUTPUT", short = 'q', long, action = clap::ArgAction::SetTrue)]
+    pub quiet: bool,
+
     /// Disable colored output
     #[arg(help_heading = "OUTPUT", long = "no-color", action = clap::ArgAction::SetTrue)]
     pub no_color: bool,
@@ -132,6 +136,18 @@ pub struct Cli {
     /// Number of URLs to scan concurrently
     #[arg(help_heading = "REQUEST", short = 'j', long = "concurrency", default_value_t = 1)]
     pub concurrency: usize,
+
+    /// HTTP/SOCKS proxy URL (e.g., http://127.0.0.1:8080)
+    #[arg(help_heading = "REQUEST", short = 'x', long = "proxy")]
+    pub proxy: Option<String>,
+
+    /// Maximum number of payloads to test per check type
+    #[arg(help_heading = "DETECT", long = "max-payloads")]
+    pub max_payloads: Option<usize>,
+
+    /// Number of baseline requests for timing measurement
+    #[arg(help_heading = "DETECT", long = "baseline-count", default_value_t = 3)]
+    pub baseline_count: usize,
 }
 
 impl Cli {
@@ -139,6 +155,12 @@ impl Cli {
     pub fn apply_global_settings(&self) {
         if self.no_color {
             control::set_override(false);
+        }
+        if self.quiet {
+            crate::utils::set_quiet(true);
+        }
+        if let Some(ref proxy) = self.proxy {
+            crate::http::set_proxy(proxy.clone());
         }
     }
 }

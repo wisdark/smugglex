@@ -39,4 +39,16 @@ smugglex -V https://target.com
 smugglex -o results.json -f json https://target.com
 ```
 
+## Through a Proxy
+
+```bash
+smugglex -x http://127.0.0.1:8080 https://target.com
+```
+
+## Quick Scan (Limited Payloads)
+
+```bash
+smugglex --max-payloads 10 https://target.com
+```
+
 > smugglex uses POST method by default. Use `-m` to change the HTTP method.
