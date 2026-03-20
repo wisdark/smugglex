@@ -107,6 +107,12 @@ pub fn save_results_to_file(
         checks: results,
     };
     let json_output = serde_json::to_string_pretty(&scan_results)?;
+    if fs::metadata(output_file).is_ok() {
+        log(
+            LogLevel::Warning,
+            &format!("overwriting existing file: {}", output_file),
+        );
+    }
     let mut file = fs::File::create(output_file)?;
     file.write_all(json_output.as_bytes())?;
     log(LogLevel::Info, &format!("results saved to {}", output_file));

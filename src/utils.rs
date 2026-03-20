@@ -81,6 +81,12 @@ pub fn export_payload(
         export_dir, protocol, sanitized_host, check_type, payload_index
     );
 
+    if fs::metadata(&filename).is_ok() {
+        log(
+            LogLevel::Warning,
+            &format!("overwriting existing payload file: {}", filename),
+        );
+    }
     fs::write(&filename, payload)?;
 
     Ok(filename)
