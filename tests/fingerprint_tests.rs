@@ -38,7 +38,9 @@ async fn start_mock_server(server_header: &str, extra_headers: &str) -> (String,
 #[tokio::test]
 async fn test_fingerprint_nginx_server() {
     let (host, port) = start_mock_server("nginx/1.24.0", "").await;
-    let result = fingerprint_target(&host, port, "/", 5, false, false).await.unwrap();
+    let result = fingerprint_target(&host, port, "/", 5, false, false)
+        .await
+        .unwrap();
     assert_eq!(result.detected_proxy, ProxyType::Nginx);
     assert_eq!(result.server_header.as_deref(), Some("nginx/1.24.0"));
 }
@@ -46,49 +48,63 @@ async fn test_fingerprint_nginx_server() {
 #[tokio::test]
 async fn test_fingerprint_apache_server() {
     let (host, port) = start_mock_server("Apache/2.4.52", "").await;
-    let result = fingerprint_target(&host, port, "/", 5, false, false).await.unwrap();
+    let result = fingerprint_target(&host, port, "/", 5, false, false)
+        .await
+        .unwrap();
     assert_eq!(result.detected_proxy, ProxyType::Apache);
 }
 
 #[tokio::test]
 async fn test_fingerprint_cloudflare_via_cf_ray() {
     let (host, port) = start_mock_server("cloudflare", "CF-RAY: abc123-LAX\r\n").await;
-    let result = fingerprint_target(&host, port, "/", 5, false, false).await.unwrap();
+    let result = fingerprint_target(&host, port, "/", 5, false, false)
+        .await
+        .unwrap();
     assert_eq!(result.detected_proxy, ProxyType::Cloudflare);
 }
 
 #[tokio::test]
 async fn test_fingerprint_cloudfront_via_amz_header() {
     let (host, port) = start_mock_server("CloudFront", "X-Amz-Cf-Id: abc123\r\n").await;
-    let result = fingerprint_target(&host, port, "/", 5, false, false).await.unwrap();
+    let result = fingerprint_target(&host, port, "/", 5, false, false)
+        .await
+        .unwrap();
     assert_eq!(result.detected_proxy, ProxyType::CloudFront);
 }
 
 #[tokio::test]
 async fn test_fingerprint_varnish_via_x_varnish() {
     let (host, port) = start_mock_server("Varnish", "X-Varnish: 12345\r\n").await;
-    let result = fingerprint_target(&host, port, "/", 5, false, false).await.unwrap();
+    let result = fingerprint_target(&host, port, "/", 5, false, false)
+        .await
+        .unwrap();
     assert_eq!(result.detected_proxy, ProxyType::Varnish);
 }
 
 #[tokio::test]
 async fn test_fingerprint_unknown_server() {
     let (host, port) = start_mock_server("MyCustom/1.0", "").await;
-    let result = fingerprint_target(&host, port, "/", 5, false, false).await.unwrap();
+    let result = fingerprint_target(&host, port, "/", 5, false, false)
+        .await
+        .unwrap();
     assert!(matches!(result.detected_proxy, ProxyType::Unknown(_)));
 }
 
 #[tokio::test]
 async fn test_fingerprint_envoy() {
     let (host, port) = start_mock_server("envoy", "").await;
-    let result = fingerprint_target(&host, port, "/", 5, false, false).await.unwrap();
+    let result = fingerprint_target(&host, port, "/", 5, false, false)
+        .await
+        .unwrap();
     assert_eq!(result.detected_proxy, ProxyType::Envoy);
 }
 
 #[tokio::test]
 async fn test_fingerprint_haproxy() {
     let (host, port) = start_mock_server("HAProxy", "").await;
-    let result = fingerprint_target(&host, port, "/", 5, false, false).await.unwrap();
+    let result = fingerprint_target(&host, port, "/", 5, false, false)
+        .await
+        .unwrap();
     assert_eq!(result.detected_proxy, ProxyType::HAProxy);
 }
 

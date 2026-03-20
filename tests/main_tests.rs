@@ -141,22 +141,28 @@ async fn test_checks_filter_with_spaces() {
 }
 
 #[tokio::test]
-#[allow(clippy::unnecessary_unwrap)]
 async fn test_vhost_header_override() {
     let url_host = "192.168.1.1";
-    let vhost = Some("example.com");
+    let vhost: Option<&str> = Some("example.com");
 
-    let host_header = vhost.unwrap_or(url_host);
+    // Test that vhost takes precedence over url_host
+    fn resolve_host<'a>(vhost: Option<&'a str>, default: &'a str) -> &'a str {
+        vhost.unwrap_or(default)
+    }
+    let host_header = resolve_host(vhost, url_host);
     assert_eq!(host_header, "example.com");
 }
 
 #[tokio::test]
-#[allow(clippy::unnecessary_unwrap)]
 async fn test_vhost_header_default() {
     let url_host = "192.168.1.1";
     let vhost: Option<&str> = None;
 
-    let host_header = vhost.unwrap_or(url_host);
+    // Test that url_host is used when vhost is None
+    fn resolve_host<'a>(vhost: Option<&'a str>, default: &'a str) -> &'a str {
+        vhost.unwrap_or(default)
+    }
+    let host_header = resolve_host(vhost, url_host);
     assert_eq!(host_header, "192.168.1.1");
 }
 
@@ -249,7 +255,7 @@ async fn test_vulnerable_count_calculation() {
     use chrono::Utc;
     use smugglex::model::CheckResult;
 
-    let results = vec![
+    let results = [
         CheckResult {
             check_type: "CL.TE".to_string(),
             vulnerable: true,
@@ -515,7 +521,7 @@ async fn test_all_check_types_selection() {
 
 #[tokio::test]
 async fn test_check_type_filtering() {
-    let selected_checks = vec!["cl-te", "h2c"];
+    let selected_checks = ["cl-te", "h2c"];
 
     let should_run_cl_te = selected_checks.contains(&"cl-te");
     let should_run_te_cl = selected_checks.contains(&"te-cl");
@@ -614,7 +620,7 @@ async fn test_results_aggregation() {
     use chrono::Utc;
     use smugglex::model::CheckResult;
 
-    let results = vec![
+    let results = [
         CheckResult {
             check_type: "CL.TE".to_string(),
             vulnerable: false,

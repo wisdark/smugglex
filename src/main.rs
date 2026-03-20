@@ -64,10 +64,7 @@ async fn main() -> Result<()> {
                 let cli_ref = cli.clone();
                 handles.push(tokio::spawn(async move {
                     if let Err(e) = process_url(&url, &cli_ref).await {
-                        log(
-                            LogLevel::Error,
-                            &format!("error processing {}: {}", url, e),
-                        );
+                        log(LogLevel::Error, &format!("error processing {}: {}", url, e));
                     }
                 }));
             }
@@ -253,7 +250,13 @@ async fn process_url(target_url: &str, cli: &Cli) -> Result<()> {
         pb.finish_and_clear();
     }
 
-    log_scan_results(&results, &cli.format, target_url, &cli.method, &fingerprint_info);
+    log_scan_results(
+        &results,
+        &cli.format,
+        target_url,
+        &cli.method,
+        &fingerprint_info,
+    );
 
     // Run exploits if requested and vulnerabilities were found
     if let Some(ref exploit_str) = cli.exploit {
@@ -281,7 +284,13 @@ async fn process_url(target_url: &str, cli: &Cli) -> Result<()> {
     }
 
     if let Some(ref output_file) = cli.output {
-        save_results_to_file(output_file, target_url, &cli.method, results, &fingerprint_info)?;
+        save_results_to_file(
+            output_file,
+            target_url,
+            &cli.method,
+            results,
+            &fingerprint_info,
+        )?;
     }
 
     let duration = start_time.elapsed();
@@ -357,7 +366,12 @@ fn log_plain_results(results: &[CheckResult], vulnerable_count: usize) {
                 format!("=== {} Vulnerability Details ===", result.check_type).bold()
             );
             if let Some(ref confidence) = result.confidence {
-                println!("{} {} (Confidence: {:?})", "Status:".bold(), "VULNERABLE".red().bold(), confidence);
+                println!(
+                    "{} {} (Confidence: {:?})",
+                    "Status:".bold(),
+                    "VULNERABLE".red().bold(),
+                    confidence
+                );
             } else {
                 println!("{} {}", "Status:".bold(), "VULNERABLE".red().bold());
             }
@@ -389,10 +403,7 @@ fn log_plain_results(results: &[CheckResult], vulnerable_count: usize) {
 }
 
 /// Extract vulnerability context and log it, returning None (with log) if unavailable.
-fn prepare_exploit_context(
-    results: &[CheckResult],
-    verbose: bool,
-) -> Option<VulnerabilityContext> {
+fn prepare_exploit_context(results: &[CheckResult], verbose: bool) -> Option<VulnerabilityContext> {
     let vuln_ctx = extract_vulnerability_context(results);
     match &vuln_ctx {
         Some(ctx) if verbose => {

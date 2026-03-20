@@ -45,4 +45,3 @@ pub struct ScanResults {
     pub fingerprint: Option<FingerprintInfo>,
     pub checks: Vec<CheckResult>,
 }
-

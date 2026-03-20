@@ -168,4 +168,3 @@ pub async fn send_request(
 
     Ok((response_str, duration))
 }
-

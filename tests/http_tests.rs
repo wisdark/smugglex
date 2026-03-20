@@ -29,7 +29,7 @@ async fn mock_server(port: u16, response: &str) {
                 response.len(),
                 response
             );
-            let _ = socket.write_all(http_response.as_bytes()).await.unwrap();
+            socket.write_all(http_response.as_bytes()).await.unwrap();
         }
     });
 }
@@ -54,7 +54,7 @@ async fn test_send_request_http_success() {
     .await;
 
     assert!(result.is_ok());
-    let (response, duration) = result.unwrap();
+    let (response, _duration) = result.unwrap();
     assert!(response.contains("HTTP/1.1 200 OK"));
     assert!(response.contains(response_body));
 }
@@ -72,7 +72,7 @@ async fn test_send_request_with_timeout() {
             // Delay response to trigger timeout
             tokio::time::sleep(Duration::from_secs(2)).await;
             let http_response = "HTTP/1.1 200 OK\r\nContent-Length: 0\r\n\r\n";
-            let _ = socket.write_all(http_response.as_bytes()).await.unwrap();
+            socket.write_all(http_response.as_bytes()).await.unwrap();
         }
     });
 

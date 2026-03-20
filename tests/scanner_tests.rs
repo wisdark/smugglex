@@ -11,15 +11,18 @@
 //! - Integration tests for run_checks_for_type function
 //! - False positive reduction: multi-baseline, confirmation retries, baseline status code context
 
-use smugglex::scanner::{run_checks_for_type, CheckParams, TIMING_MULTIPLIER, MIN_DELAY_MS, DEFAULT_BASELINE_COUNT, CONFIRMATION_RETRIES};
-use smugglex::model::CheckResult;
-use std::time::Duration;
 use chrono::Utc;
 use indicatif::ProgressBar;
-use tokio::net::TcpListener;
-use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use smugglex::model::CheckResult;
+use smugglex::scanner::{
+    CONFIRMATION_RETRIES, CheckParams, DEFAULT_BASELINE_COUNT, MIN_DELAY_MS, TIMING_MULTIPLIER,
+    run_checks_for_type,
+};
 use std::sync::Arc;
 use std::sync::atomic::{AtomicUsize, Ordering};
+use std::time::Duration;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
 
 // ========== Constants Tests ==========
 
@@ -489,9 +492,10 @@ async fn test_run_checks_for_type_not_vulnerable() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -528,9 +532,10 @@ async fn test_run_checks_for_type_vulnerable_timeout_status() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -568,9 +573,10 @@ async fn test_run_checks_for_type_vulnerable_timing() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -609,8 +615,14 @@ async fn test_run_checks_for_type_multiple_payloads() {
 
     // Multiple attack requests - first one should trigger vulnerability
     let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest2", host),
+        format!(
+            "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+            host
+        ),
+        format!(
+            "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest2",
+            host
+        ),
     ];
 
     let result = run_checks_for_type(CheckParams {
@@ -649,9 +661,10 @@ async fn test_run_checks_for_type_with_export_dir() {
     let temp_dir = std::env::temp_dir().join("smugglex_test_export");
     std::fs::create_dir_all(&temp_dir).unwrap();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -688,9 +701,10 @@ async fn test_run_checks_for_type_verbose_mode() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -724,9 +738,10 @@ async fn test_run_checks_for_type_with_custom_path() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET /api/v1/test HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET /api/v1/test HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -795,9 +810,7 @@ async fn test_run_checks_for_type_different_check_names() {
     let check_names = vec!["CL.TE", "TE.CL", "TE.TE", "H2C", "H2"];
 
     for check_name in check_names {
-        let attack_requests = vec![
-            format!("GET / HTTP/1.1\r\nHost: {}\r\n\r\n", host),
-        ];
+        let attack_requests = vec![format!("GET / HTTP/1.1\r\nHost: {}\r\n\r\n", host)];
 
         let result = run_checks_for_type(CheckParams {
             pb: &pb,
@@ -812,8 +825,8 @@ async fn test_run_checks_for_type_different_check_names() {
             export_dir: None,
             current_check: 1,
             total_checks: 1,
-        delay: 0,
-        baseline_count: DEFAULT_BASELINE_COUNT,
+            delay: 0,
+            baseline_count: DEFAULT_BASELINE_COUNT,
         })
         .await;
 
@@ -858,9 +871,7 @@ async fn test_run_checks_for_type_408_status_code() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\n\r\n", host),
-    ];
+    let attack_requests = vec![format!("GET / HTTP/1.1\r\nHost: {}\r\n\r\n", host)];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -945,9 +956,10 @@ async fn test_flaky_504_not_confirmed() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -972,7 +984,10 @@ async fn test_flaky_504_not_confirmed() {
     assert!(result.is_ok());
     let check_result = result.unwrap();
     // Should NOT be vulnerable because confirmation retries returned 200
-    assert!(!check_result.vulnerable, "Flaky 504 should not be flagged as vulnerable");
+    assert!(
+        !check_result.vulnerable,
+        "Flaky 504 should not be flagged as vulnerable"
+    );
     assert_eq!(check_result.confidence, None);
 }
 
@@ -1001,9 +1016,10 @@ async fn test_baseline_504_not_flagged() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -1028,7 +1044,10 @@ async fn test_baseline_504_not_flagged() {
     assert!(result.is_ok());
     let check_result = result.unwrap();
     // Should NOT be vulnerable because baseline also had 504
-    assert!(!check_result.vulnerable, "Baseline 504 should not be flagged as smuggling");
+    assert!(
+        !check_result.vulnerable,
+        "Baseline 504 should not be flagged as smuggling"
+    );
 }
 
 /// Test: connection timeout on first attack but normal on retries -> not vulnerable (strict confirmation)
@@ -1067,9 +1086,10 @@ async fn test_connection_timeout_strict_confirmation() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -1094,7 +1114,10 @@ async fn test_connection_timeout_strict_confirmation() {
     assert!(result.is_ok());
     let check_result = result.unwrap();
     // Should NOT be vulnerable because connection timeout not reproduced on ALL retries
-    assert!(!check_result.vulnerable, "Unreproduced connection timeout should not be flagged");
+    assert!(
+        !check_result.vulnerable,
+        "Unreproduced connection timeout should not be flagged"
+    );
 }
 
 /// Test: confirmed vulnerability with both status code + timing -> High confidence
@@ -1134,9 +1157,10 @@ async fn test_confirmed_vulnerability_high_confidence() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,
@@ -1206,9 +1230,10 @@ async fn test_confirmed_vulnerability_medium_confidence() {
     let pb = ProgressBar::new_spinner();
     pb.finish_and_clear();
 
-    let attack_requests = vec![
-        format!("GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1", host),
-    ];
+    let attack_requests = vec![format!(
+        "GET / HTTP/1.1\r\nHost: {}\r\nContent-Length: 5\r\n\r\ntest1",
+        host
+    )];
 
     let result = run_checks_for_type(CheckParams {
         pb: &pb,

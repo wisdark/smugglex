@@ -86,10 +86,7 @@ fn parse_response_headers(response: &str) -> HashMap<String, String> {
             break;
         }
         if let Some((key, value)) = line.split_once(':') {
-            headers.insert(
-                key.trim().to_ascii_lowercase(),
-                value.trim().to_string(),
-            );
+            headers.insert(key.trim().to_ascii_lowercase(), value.trim().to_string());
         }
     }
     headers
@@ -191,7 +188,8 @@ pub async fn fingerprint_target(
         path, host
     );
 
-    let (response, _duration) = send_request(host, port, &request, timeout, verbose, use_tls).await?;
+    let (response, _duration) =
+        send_request(host, port, &request, timeout, verbose, use_tls).await?;
     let headers = parse_response_headers(&response);
     let detected_proxy = identify_proxy(&headers);
 
@@ -237,7 +235,8 @@ mod tests {
 
     #[test]
     fn test_parse_response_headers() {
-        let response = "HTTP/1.1 200 OK\r\nServer: nginx/1.24.0\r\nContent-Type: text/html\r\n\r\nbody";
+        let response =
+            "HTTP/1.1 200 OK\r\nServer: nginx/1.24.0\r\nContent-Type: text/html\r\n\r\nbody";
         let headers = parse_response_headers(response);
         assert_eq!(headers.get("server").unwrap(), "nginx/1.24.0");
         assert_eq!(headers.get("content-type").unwrap(), "text/html");

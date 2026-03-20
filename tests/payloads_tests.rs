@@ -9,8 +9,8 @@
 //! - Custom headers and cookies formatting
 //! - Payload structure and HTTP compliance
 
-use smugglex::payloads::*;
 use smugglex::model::CheckResult;
+use smugglex::payloads::*;
 #[test]
 fn test_cl_te_payloads_generation() {
     let payloads = get_cl_te_payloads("/test", "example.com", "POST", &[], &[]);
@@ -1391,19 +1391,22 @@ fn test_cl_edge_case_payloads_count() {
 fn test_cl_edge_case_multiple_cl_headers() {
     let payloads = get_cl_edge_case_payloads("/", "example.com", "POST", &[], &[]);
 
-    let has_dual_cl = payloads.iter().any(|p| {
-        p.matches("Content-Length:").count() >= 2
-    });
-    assert!(has_dual_cl, "Should contain payloads with multiple Content-Length headers");
+    let has_dual_cl = payloads
+        .iter()
+        .any(|p| p.matches("Content-Length:").count() >= 2);
+    assert!(
+        has_dual_cl,
+        "Should contain payloads with multiple Content-Length headers"
+    );
 }
 
 #[test]
 fn test_cl_edge_case_cl_zero_with_body() {
     let payloads = get_cl_edge_case_payloads("/", "example.com", "POST", &[], &[]);
 
-    let has_cl_zero_body = payloads.iter().any(|p| {
-        p.contains("Content-Length: 0\r\n") && p.contains("GET /admin")
-    });
+    let has_cl_zero_body = payloads
+        .iter()
+        .any(|p| p.contains("Content-Length: 0\r\n") && p.contains("GET /admin"));
     assert!(has_cl_zero_body, "Should contain CL:0 with smuggled body");
 }
 
@@ -1428,15 +1431,30 @@ fn test_cl_edge_case_cl_value_variations() {
     let payloads = get_cl_edge_case_payloads("/", "example.com", "POST", &[], &[]);
 
     // Plus prefix
-    assert!(payloads.iter().any(|p| p.contains("Content-Length: +6")), "Should contain +6 CL");
+    assert!(
+        payloads.iter().any(|p| p.contains("Content-Length: +6")),
+        "Should contain +6 CL"
+    );
     // Negative
-    assert!(payloads.iter().any(|p| p.contains("Content-Length: -1")), "Should contain -1 CL");
+    assert!(
+        payloads.iter().any(|p| p.contains("Content-Length: -1")),
+        "Should contain -1 CL"
+    );
     // Hex
-    assert!(payloads.iter().any(|p| p.contains("Content-Length: 0x06")), "Should contain hex CL");
+    assert!(
+        payloads.iter().any(|p| p.contains("Content-Length: 0x06")),
+        "Should contain hex CL"
+    );
     // Decimal
-    assert!(payloads.iter().any(|p| p.contains("Content-Length: 6.0")), "Should contain decimal CL");
+    assert!(
+        payloads.iter().any(|p| p.contains("Content-Length: 6.0")),
+        "Should contain decimal CL"
+    );
     // Scientific
-    assert!(payloads.iter().any(|p| p.contains("Content-Length: 6e0")), "Should contain scientific CL");
+    assert!(
+        payloads.iter().any(|p| p.contains("Content-Length: 6e0")),
+        "Should contain scientific CL"
+    );
 }
 
 #[test]
@@ -1444,11 +1462,20 @@ fn test_cl_edge_case_header_name_variations() {
     let payloads = get_cl_edge_case_payloads("/", "example.com", "POST", &[], &[]);
 
     // Underscore variation
-    assert!(payloads.iter().any(|p| p.contains("Content_Length:")), "Should contain underscore CL");
+    assert!(
+        payloads.iter().any(|p| p.contains("Content_Length:")),
+        "Should contain underscore CL"
+    );
     // Lowercase
-    assert!(payloads.iter().any(|p| p.contains("content-length:")), "Should contain lowercase CL");
+    assert!(
+        payloads.iter().any(|p| p.contains("content-length:")),
+        "Should contain lowercase CL"
+    );
     // Space before colon
-    assert!(payloads.iter().any(|p| p.contains("Content-Length :")), "Should contain space-before-colon CL");
+    assert!(
+        payloads.iter().any(|p| p.contains("Content-Length :")),
+        "Should contain space-before-colon CL"
+    );
 }
 
 #[test]
@@ -1457,8 +1484,14 @@ fn test_cl_edge_case_with_custom_headers() {
     let payloads = get_cl_edge_case_payloads("/api", "example.com", "POST", &custom, &[]);
 
     for payload in &payloads {
-        assert!(payload.contains("X-Custom: test"), "Custom header should be present");
-        assert!(payload.contains("Host: example.com"), "Host header should be present");
+        assert!(
+            payload.contains("X-Custom: test"),
+            "Custom header should be present"
+        );
+        assert!(
+            payload.contains("Host: example.com"),
+            "Host header should be present"
+        );
     }
 }
 
@@ -1468,7 +1501,10 @@ fn test_cl_edge_case_with_cookies() {
     let payloads = get_cl_edge_case_payloads("/", "example.com", "POST", &[], &cookies);
 
     for payload in &payloads {
-        assert!(payload.contains("Cookie: session=abc"), "Cookie should be present");
+        assert!(
+            payload.contains("Cookie: session=abc"),
+            "Cookie should be present"
+        );
     }
 }
 

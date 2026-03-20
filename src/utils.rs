@@ -122,4 +122,3 @@ pub fn log(level: LogLevel, message: &str) {
     let time = Local::now().format("%I:%M%p").to_string().to_uppercase();
     println!("{} {} {}", time.dimmed(), level.prefix(), message);
 }
-

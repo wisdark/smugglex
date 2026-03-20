@@ -122,7 +122,12 @@ pub struct Cli {
     pub version: bool,
 
     /// Delay between requests in milliseconds (rate limiting)
-    #[arg(help_heading = "REQUEST", short = 'd', long = "delay", default_value_t = 0)]
+    #[arg(
+        help_heading = "REQUEST",
+        short = 'd',
+        long = "delay",
+        default_value_t = 0
+    )]
     pub delay: u64,
 
     /// Quiet mode (only show vulnerabilities)
@@ -134,7 +139,12 @@ pub struct Cli {
     pub no_color: bool,
 
     /// Number of URLs to scan concurrently
-    #[arg(help_heading = "REQUEST", short = 'j', long = "concurrency", default_value_t = 1)]
+    #[arg(
+        help_heading = "REQUEST",
+        short = 'j',
+        long = "concurrency",
+        default_value_t = 1
+    )]
     pub concurrency: usize,
 
     /// HTTP/SOCKS proxy URL (e.g., http://127.0.0.1:8080)

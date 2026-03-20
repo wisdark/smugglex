@@ -32,10 +32,10 @@ jobs:
         with:
           toolchain: stable
           components: rustfmt, clippy
-      #- name: Run cargo fmt
-      #  run: cargo fmt --all -- --check
-      #- name: Run cargo clippy
-      #  run: cargo clippy --all-targets --all-features -- -D warnings
+      - name: Run cargo fmt
+        run: cargo fmt --all -- --check
+      - name: Run cargo clippy
+        run: cargo clippy --all-targets --all-features -- -D warnings
   coverage:
     runs-on: ubuntu-latest
     steps:

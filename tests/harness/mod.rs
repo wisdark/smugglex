@@ -36,6 +36,7 @@ pub struct MockProxyConfig {
     /// Server header value to return
     pub server_header: String,
     /// How to handle Transfer-Encoding
+    #[allow(dead_code)]
     pub te_handling: TeHandling,
     /// How to handle Content-Length
     pub cl_handling: ClHandling,
@@ -80,7 +81,8 @@ impl MockProxyConfig {
             server_header: "cloudflare".to_string(),
             te_handling: TeHandling::NormalizeTE,
             cl_handling: ClHandling::RejectDuplicate,
-            extra_response_headers: "CF-RAY: abc123-LAX\r\nCF-Cache-Status: DYNAMIC\r\n".to_string(),
+            extra_response_headers: "CF-RAY: abc123-LAX\r\nCF-Cache-Status: DYNAMIC\r\n"
+                .to_string(),
         }
     }
 
@@ -125,50 +127,45 @@ impl MockProxy {
 
         let handle = tokio::spawn(async move {
             // Accept connections in a loop
-            loop {
-                match listener.accept().await {
-                    Ok((mut stream, _)) => {
-                        let config = config.clone();
-                        tokio::spawn(async move {
-                            let mut buf = vec![0u8; 8192];
-                            let n = match stream.read(&mut buf).await {
-                                Ok(n) if n > 0 => n,
-                                _ => return,
-                            };
-                            let request = String::from_utf8_lossy(&buf[..n]);
+            while let Ok((mut stream, _)) = listener.accept().await {
+                let config = config.clone();
+                tokio::spawn(async move {
+                    let mut buf = vec![0u8; 8192];
+                    let n = match stream.read(&mut buf).await {
+                        Ok(n) if n > 0 => n,
+                        _ => return,
+                    };
+                    let request = String::from_utf8_lossy(&buf[..n]);
 
-                            // Check for duplicate CL and decide response
-                            let has_duplicate_cl = request
-                                .lines()
-                                .filter(|l| l.to_lowercase().starts_with("content-length:"))
-                                .count()
-                                > 1;
+                    // Check for duplicate CL and decide response
+                    let has_duplicate_cl = request
+                        .lines()
+                        .filter(|l| l.to_lowercase().starts_with("content-length:"))
+                        .count()
+                        > 1;
 
-                            let (status, body) = if has_duplicate_cl {
-                                match config.cl_handling {
-                                    ClHandling::RejectDuplicate => {
-                                        ("400 Bad Request", "Duplicate Content-Length")
-                                    }
-                                    _ => ("200 OK", "OK"),
-                                }
-                            } else {
-                                ("200 OK", "OK")
-                            };
+                    let (status, body) = if has_duplicate_cl {
+                        match config.cl_handling {
+                            ClHandling::RejectDuplicate => {
+                                ("400 Bad Request", "Duplicate Content-Length")
+                            }
+                            _ => ("200 OK", "OK"),
+                        }
+                    } else {
+                        ("200 OK", "OK")
+                    };
 
-                            let response = format!(
-                                "HTTP/1.1 {}\r\nServer: {}\r\n{}Content-Length: {}\r\nConnection: close\r\n\r\n{}",
-                                status,
-                                config.server_header,
-                                config.extra_response_headers,
-                                body.len(),
-                                body
-                            );
+                    let response = format!(
+                        "HTTP/1.1 {}\r\nServer: {}\r\n{}Content-Length: {}\r\nConnection: close\r\n\r\n{}",
+                        status,
+                        config.server_header,
+                        config.extra_response_headers,
+                        body.len(),
+                        body
+                    );
 
-                            let _ = stream.write_all(response.as_bytes()).await;
-                        });
-                    }
-                    Err(_) => break,
-                }
+                    let _ = stream.write_all(response.as_bytes()).await;
+                });
             }
         });
 

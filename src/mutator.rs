@@ -135,16 +135,18 @@ impl Mutator {
             // Find the numeric value
             let trimmed = rest.trim_start();
             let skip_ws = rest.len() - trimmed.len();
-            let num_end = trimmed.find(|c: char| !c.is_ascii_digit()).unwrap_or(trimmed.len());
+            let num_end = trimmed
+                .find(|c: char| !c.is_ascii_digit())
+                .unwrap_or(trimmed.len());
             if num_end > 0
                 && let Ok(val) = trimmed[..num_end].parse::<i64>()
             {
                 let mutation_type = self.rand_index(4);
                 let new_val = match mutation_type {
-                    0 => format!("0{}", val),  // leading zero
+                    0 => format!("0{}", val),    // leading zero
                     1 => format!("{}", val + 1), // off-by-one up
-                    2 => format!("{} ", val),   // trailing space
-                    3 => format!(" {}", val),   // leading space
+                    2 => format!("{} ", val),    // trailing space
+                    3 => format!(" {}", val),    // leading space
                     _ => format!("{}", val),
                 };
                 let value_start = after_header + skip_ws;
@@ -162,8 +164,8 @@ impl Mutator {
     fn mutate_line_endings(&mut self, payload: &str) -> String {
         let mutation = self.rand_index(3);
         match mutation {
-            0 => payload.replace("\r\n", "\n"),       // CRLF -> LF
-            1 => payload.replace("\r\n", "\r"),       // CRLF -> CR only
+            0 => payload.replace("\r\n", "\n"),           // CRLF -> LF
+            1 => payload.replace("\r\n", "\r"),           // CRLF -> CR only
             2 => payload.replacen("\r\n", "\r\n\r\n", 1), // double first CRLF
             _ => payload.to_string(),
         }
@@ -191,7 +193,10 @@ impl Mutator {
                 result
             } else {
                 // Find end of TE line
-                let line_end = payload[pos..].find("\r\n").map(|p| pos + p + 2).unwrap_or(payload.len());
+                let line_end = payload[pos..]
+                    .find("\r\n")
+                    .map(|p| pos + p + 2)
+                    .unwrap_or(payload.len());
                 let mut result = payload[..line_end].to_string();
                 result.push_str(junk);
                 result.push_str("\r\n");
@@ -245,7 +250,10 @@ impl Mutator {
 
         if dup_te {
             if let Some(pos) = find_case_insensitive(payload, "transfer-encoding") {
-                let line_end = payload[pos..].find("\r\n").map(|p| pos + p + 2).unwrap_or(payload.len());
+                let line_end = payload[pos..]
+                    .find("\r\n")
+                    .map(|p| pos + p + 2)
+                    .unwrap_or(payload.len());
                 let header_line = &payload[pos..line_end];
                 let mut result = payload[..line_end].to_string();
                 result.push_str(header_line);
@@ -258,7 +266,10 @@ impl Mutator {
                 payload.to_string()
             }
         } else if let Some(pos) = find_case_insensitive(payload, "content-length") {
-            let line_end = payload[pos..].find("\r\n").map(|p| pos + p + 2).unwrap_or(payload.len());
+            let line_end = payload[pos..]
+                .find("\r\n")
+                .map(|p| pos + p + 2)
+                .unwrap_or(payload.len());
             let header_line = &payload[pos..line_end];
             let mut result = payload[..line_end].to_string();
             result.push_str(header_line);
@@ -314,8 +325,14 @@ mod tests {
             "POST / HTTP/1.1\r\nHost: example.com\r\nContent-Length: 6\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\nG".to_string(),
         ];
 
-        let mut m1 = Mutator::new(MutatorConfig { seed: 42, mutations_per_payload: 5 });
-        let mut m2 = Mutator::new(MutatorConfig { seed: 42, mutations_per_payload: 5 });
+        let mut m1 = Mutator::new(MutatorConfig {
+            seed: 42,
+            mutations_per_payload: 5,
+        });
+        let mut m2 = Mutator::new(MutatorConfig {
+            seed: 42,
+            mutations_per_payload: 5,
+        });
 
         let r1 = m1.mutate_payloads(&seeds);
         let r2 = m2.mutate_payloads(&seeds);
@@ -328,8 +345,14 @@ mod tests {
             "POST / HTTP/1.1\r\nHost: example.com\r\nContent-Length: 6\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\nG".to_string(),
         ];
 
-        let mut m1 = Mutator::new(MutatorConfig { seed: 42, mutations_per_payload: 5 });
-        let mut m2 = Mutator::new(MutatorConfig { seed: 999, mutations_per_payload: 5 });
+        let mut m1 = Mutator::new(MutatorConfig {
+            seed: 42,
+            mutations_per_payload: 5,
+        });
+        let mut m2 = Mutator::new(MutatorConfig {
+            seed: 999,
+            mutations_per_payload: 5,
+        });
 
         let r1 = m1.mutate_payloads(&seeds);
         let r2 = m2.mutate_payloads(&seeds);
@@ -344,7 +367,10 @@ mod tests {
             "POST / HTTP/1.1\r\nHost: example.com\r\nContent-Length: 6\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\nG".to_string(),
         ];
 
-        let mut m = Mutator::new(MutatorConfig { seed: 42, mutations_per_payload: 3 });
+        let mut m = Mutator::new(MutatorConfig {
+            seed: 42,
+            mutations_per_payload: 3,
+        });
         let result = m.mutate_payloads(&seeds);
 
         // Check no duplicates
@@ -358,7 +384,10 @@ mod tests {
             "POST / HTTP/1.1\r\nHost: example.com\r\nContent-Length: 6\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\nG".to_string(),
         ];
 
-        let mut m = Mutator::new(MutatorConfig { seed: 42, mutations_per_payload: 3 });
+        let mut m = Mutator::new(MutatorConfig {
+            seed: 42,
+            mutations_per_payload: 3,
+        });
         let result = m.mutate_payloads(&seeds);
 
         // First entry should be the original
@@ -371,7 +400,10 @@ mod tests {
             "POST / HTTP/1.1\r\nHost: example.com\r\nContent-Length: 6\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\nG".to_string(),
         ];
 
-        let mut m = Mutator::new(MutatorConfig { seed: 42, mutations_per_payload: 10 });
+        let mut m = Mutator::new(MutatorConfig {
+            seed: 42,
+            mutations_per_payload: 10,
+        });
         let result = m.mutate_payloads(&seeds);
 
         for payload in &result {
@@ -389,15 +421,24 @@ mod tests {
             "POST / HTTP/1.1\r\nHost: example.com\r\nContent-Length: 6\r\nTransfer-Encoding: chunked\r\n\r\n0\r\n\r\nG".to_string(),
         ];
 
-        let mut m = Mutator::new(MutatorConfig { seed: 42, mutations_per_payload: 5 });
+        let mut m = Mutator::new(MutatorConfig {
+            seed: 42,
+            mutations_per_payload: 5,
+        });
         let result = m.mutate_payloads(&seeds);
         assert!(result.len() > seeds.len());
     }
 
     #[test]
     fn test_xorshift_deterministic() {
-        let mut m1 = Mutator::new(MutatorConfig { seed: 123, mutations_per_payload: 1 });
-        let mut m2 = Mutator::new(MutatorConfig { seed: 123, mutations_per_payload: 1 });
+        let mut m1 = Mutator::new(MutatorConfig {
+            seed: 123,
+            mutations_per_payload: 1,
+        });
+        let mut m2 = Mutator::new(MutatorConfig {
+            seed: 123,
+            mutations_per_payload: 1,
+        });
         for _ in 0..100 {
             assert_eq!(m1.next_u64(), m2.next_u64());
         }

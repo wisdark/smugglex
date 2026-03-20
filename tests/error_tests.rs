@@ -130,7 +130,7 @@ fn test_error_trait_implementation() {
 #[test]
 fn test_error_conversion_chain() {
     // Test that we can convert through multiple layers if needed
-    let io_err = io::Error::new(io::ErrorKind::Other, "underlying error");
+    let io_err = io::Error::other("underlying error");
     let smugglex_err: SmugglexError = io_err.into();
 
     // Ensure it's the correct variant
