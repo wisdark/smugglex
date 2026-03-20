@@ -98,18 +98,19 @@ async fn measure_baseline(
     })
 }
 
-#[allow(clippy::too_many_arguments)]
-async fn check_single_payload(
-    host: &str,
+struct PayloadCheckParams<'a> {
+    host: &'a str,
     port: u16,
-    attack_request: &str,
+    attack_request: &'a str,
     timeout: u64,
     verbose: bool,
     use_tls: bool,
     timing_threshold: u128,
-    baseline_status_codes: &[Option<u16>],
-) -> Result<Option<VulnerabilityInfo>> {
-    match send_request(host, port, attack_request, timeout, verbose, use_tls).await {
+    baseline_status_codes: &'a [Option<u16>],
+}
+
+async fn check_single_payload(params: &PayloadCheckParams<'_>) -> Result<Option<VulnerabilityInfo>> {
+    match send_request(params.host, params.port, params.attack_request, params.timeout, params.verbose, params.use_tls).await {
         Ok((attack_response, attack_duration)) => {
             let attack_status_line = attack_response.lines().next().unwrap_or("");
             let attack_millis = attack_duration.as_millis();
@@ -117,12 +118,12 @@ async fn check_single_payload(
             let status_code = parse_status_code(attack_status_line);
 
             // Only treat 408/504 as smuggling signal if baseline didn't also produce them
-            let baseline_has_timeout = baseline_status_codes
+            let baseline_has_timeout = params.baseline_status_codes
                 .iter()
                 .any(|c| matches!(c, Some(408) | Some(504)));
             let is_timeout_error =
                 matches!(status_code, Some(408) | Some(504)) && !baseline_has_timeout;
-            let is_delayed = attack_millis > timing_threshold && attack_millis > MIN_DELAY_MS;
+            let is_delayed = attack_millis > params.timing_threshold && attack_millis > MIN_DELAY_MS;
 
             if is_timeout_error || is_delayed {
                 Ok(Some(VulnerabilityInfo {
@@ -138,7 +139,7 @@ async fn check_single_payload(
             if matches!(e, SmugglexError::Timeout(_)) {
                 Ok(Some(VulnerabilityInfo {
                     status: "Connection Timeout".to_string(),
-                    duration: Duration::from_secs(timeout),
+                    duration: Duration::from_secs(params.timeout),
                     is_connection_timeout: true,
                 }))
             } else {
@@ -149,33 +150,14 @@ async fn check_single_payload(
 }
 
 /// Confirm a detected vulnerability by retrying CONFIRMATION_RETRIES times
-#[allow(clippy::too_many_arguments)]
 async fn confirm_vulnerability(
-    host: &str,
-    port: u16,
-    attack_request: &str,
-    timeout: u64,
-    verbose: bool,
-    use_tls: bool,
-    timing_threshold: u128,
-    baseline_status_codes: &[Option<u16>],
+    params: &PayloadCheckParams<'_>,
     is_connection_timeout: bool,
 ) -> bool {
     let mut confirmed_count = 0;
 
     for _ in 0..CONFIRMATION_RETRIES {
-        if let Ok(Some(_)) = check_single_payload(
-            host,
-            port,
-            attack_request,
-            timeout,
-            verbose,
-            use_tls,
-            timing_threshold,
-            baseline_status_codes,
-        )
-        .await
-        {
+        if let Ok(Some(_)) = check_single_payload(params).await {
             confirmed_count += 1;
         }
     }
@@ -255,29 +237,22 @@ pub async fn run_checks_for_type(params: CheckParams<'_>) -> Result<CheckResult>
             ));
         }
 
-        match check_single_payload(
-            params.host,
-            params.port,
+        let payload_params = PayloadCheckParams {
+            host: params.host,
+            port: params.port,
             attack_request,
-            params.timeout,
-            params.verbose,
-            params.use_tls,
+            timeout: params.timeout,
+            verbose: params.verbose,
+            use_tls: params.use_tls,
             timing_threshold,
-            &baseline.observed_status_codes,
-        )
-        .await
-        {
+            baseline_status_codes: &baseline.observed_status_codes,
+        };
+
+        match check_single_payload(&payload_params).await {
             Ok(Some(info)) => {
                 // Confirm the vulnerability with retries
                 let confirmed = confirm_vulnerability(
-                    params.host,
-                    params.port,
-                    attack_request,
-                    params.timeout,
-                    params.verbose,
-                    params.use_tls,
-                    timing_threshold,
-                    &baseline.observed_status_codes,
+                    &payload_params,
                     info.is_connection_timeout,
                 )
                 .await;
