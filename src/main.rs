@@ -1,13 +1,11 @@
-use chrono::Utc;
 use clap::Parser;
 use colored::*;
 use indicatif::{ProgressBar, ProgressStyle};
-use std::fs;
-use std::io::{self, BufRead, IsTerminal, Write};
+use std::io::{self, BufRead, IsTerminal};
 use std::time::Duration;
 use url::Url;
 
-use smugglex::cli::{Cli, OutputFormat};
+use smugglex::cli::Cli;
 use smugglex::error::Result;
 use smugglex::exploit::{
     LocalhostAccessParams, PathFuzzParams, VulnerabilityContext, extract_vulnerability_context,
@@ -15,8 +13,9 @@ use smugglex::exploit::{
     test_path_fuzz,
 };
 use smugglex::fingerprint::{fingerprint_target, suggest_checks};
-use smugglex::model::{CheckResult, FingerprintInfo, ScanResults};
+use smugglex::model::{CheckResult, FingerprintInfo};
 use smugglex::mutator::{Mutator, MutatorConfig};
+use smugglex::output::{log_scan_results, save_results_to_file};
 use smugglex::payloads::{
     get_cl_edge_case_payloads, get_cl_te_payloads, get_h2_payloads, get_h2c_payloads,
     get_te_cl_payloads, get_te_te_payloads,
@@ -317,91 +316,6 @@ fn setup_progress_bar(verbose: bool) -> ProgressBar {
     }
 }
 
-fn log_scan_results(
-    results: &[CheckResult],
-    format: &OutputFormat,
-    target_url: &str,
-    method: &str,
-    fingerprint_info: &Option<FingerprintInfo>,
-) {
-    let vulnerable_count = results.iter().filter(|r| r.vulnerable).count();
-
-    if format.is_json() {
-        let scan_results = ScanResults {
-            target: target_url.to_string(),
-            method: method.to_string(),
-            timestamp: Utc::now().to_rfc3339(),
-            fingerprint: fingerprint_info.clone(),
-            checks: results.to_vec(),
-        };
-        match serde_json::to_string_pretty(&scan_results) {
-            Ok(json_output) => println!("{}", json_output),
-            Err(e) => {
-                log(
-                    LogLevel::Error,
-                    &format!("failed to serialize results to JSON: {}", e),
-                );
-                log(LogLevel::Info, "falling back to plain text output");
-                log_plain_results(results, vulnerable_count);
-            }
-        }
-    } else {
-        log_plain_results(results, vulnerable_count);
-    }
-}
-
-fn log_plain_results(results: &[CheckResult], vulnerable_count: usize) {
-    if vulnerable_count > 0 {
-        log(
-            LogLevel::Warning,
-            &format!("smuggling found {} vulnerability(ies)", vulnerable_count),
-        );
-        if smugglex::utils::is_quiet() {
-            return;
-        }
-        println!();
-        for result in results.iter().filter(|r| r.vulnerable) {
-            println!(
-                "{}",
-                format!("=== {} Vulnerability Details ===", result.check_type).bold()
-            );
-            if let Some(ref confidence) = result.confidence {
-                println!(
-                    "{} {} (Confidence: {:?})",
-                    "Status:".bold(),
-                    "VULNERABLE".red().bold(),
-                    confidence
-                );
-            } else {
-                println!("{} {}", "Status:".bold(), "VULNERABLE".red().bold());
-            }
-            if let Some(idx) = result.payload_index {
-                println!("{} {}", "Payload Index:".bold(), idx);
-            }
-            if let Some(ref status) = result.attack_status {
-                println!("{} {}", "Attack Response:".bold(), status);
-            }
-            if let Some(attack_ms) = result.attack_duration_ms {
-                println!(
-                    "{} Normal: {}ms, Attack: {}ms",
-                    "Timing:".bold(),
-                    result.normal_duration_ms,
-                    attack_ms
-                );
-            }
-            if let Some(ref payload) = result.payload {
-                println!("\n{}", "HTTP Raw Request:".bold());
-                println!("{}", "─".repeat(60).dimmed());
-                println!("{}", payload.cyan());
-                println!("{}", "─".repeat(60).dimmed());
-            }
-            println!();
-        }
-    } else {
-        log(LogLevel::Info, "smuggling found 0 vulnerabilities");
-    }
-}
-
 /// Extract vulnerability context and log it, returning None (with log) if unavailable.
 fn prepare_exploit_context(results: &[CheckResult], verbose: bool) -> Option<VulnerabilityContext> {
     let vuln_ctx = extract_vulnerability_context(results);
@@ -547,23 +461,3 @@ async fn run_exploits(params: &ExploitParams<'_>) -> Result<()> {
     Ok(())
 }
 
-fn save_results_to_file(
-    output_file: &str,
-    target_url: &str,
-    method: &str,
-    results: Vec<CheckResult>,
-    fingerprint_info: &Option<FingerprintInfo>,
-) -> Result<()> {
-    let scan_results = ScanResults {
-        target: target_url.to_string(),
-        method: method.to_string(),
-        timestamp: Utc::now().to_rfc3339(),
-        fingerprint: fingerprint_info.clone(),
-        checks: results,
-    };
-    let json_output = serde_json::to_string_pretty(&scan_results)?;
-    let mut file = fs::File::create(output_file)?;
-    file.write_all(json_output.as_bytes())?;
-    log(LogLevel::Info, &format!("results saved to {}", output_file));
-    Ok(())
-}

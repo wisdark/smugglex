@@ -5,6 +5,7 @@ pub mod fingerprint;
 pub mod http;
 pub mod model;
 pub mod mutator;
+pub mod output;
 pub mod payloads;
 pub mod scanner;
 pub mod utils;
