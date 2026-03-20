@@ -109,8 +109,19 @@ struct PayloadCheckParams<'a> {
     baseline_status_codes: &'a [Option<u16>],
 }
 
-async fn check_single_payload(params: &PayloadCheckParams<'_>) -> Result<Option<VulnerabilityInfo>> {
-    match send_request(params.host, params.port, params.attack_request, params.timeout, params.verbose, params.use_tls).await {
+async fn check_single_payload(
+    params: &PayloadCheckParams<'_>,
+) -> Result<Option<VulnerabilityInfo>> {
+    match send_request(
+        params.host,
+        params.port,
+        params.attack_request,
+        params.timeout,
+        params.verbose,
+        params.use_tls,
+    )
+    .await
+    {
         Ok((attack_response, attack_duration)) => {
             let attack_status_line = attack_response.lines().next().unwrap_or("");
             let attack_millis = attack_duration.as_millis();
@@ -118,12 +129,14 @@ async fn check_single_payload(params: &PayloadCheckParams<'_>) -> Result<Option<
             let status_code = parse_status_code(attack_status_line);
 
             // Only treat 408/504 as smuggling signal if baseline didn't also produce them
-            let baseline_has_timeout = params.baseline_status_codes
+            let baseline_has_timeout = params
+                .baseline_status_codes
                 .iter()
                 .any(|c| matches!(c, Some(408) | Some(504)));
             let is_timeout_error =
                 matches!(status_code, Some(408) | Some(504)) && !baseline_has_timeout;
-            let is_delayed = attack_millis > params.timing_threshold && attack_millis > MIN_DELAY_MS;
+            let is_delayed =
+                attack_millis > params.timing_threshold && attack_millis > MIN_DELAY_MS;
 
             if is_timeout_error || is_delayed {
                 Ok(Some(VulnerabilityInfo {
@@ -251,11 +264,8 @@ pub async fn run_checks_for_type(params: CheckParams<'_>) -> Result<CheckResult>
         match check_single_payload(&payload_params).await {
             Ok(Some(info)) => {
                 // Confirm the vulnerability with retries
-                let confirmed = confirm_vulnerability(
-                    &payload_params,
-                    info.is_connection_timeout,
-                )
-                .await;
+                let confirmed =
+                    confirm_vulnerability(&payload_params, info.is_connection_timeout).await;
 
                 if confirmed {
                     vulnerability_info = Some((i, attack_request.clone(), info));
