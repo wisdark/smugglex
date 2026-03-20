@@ -23,12 +23,36 @@ pub enum SmugglexError {
 impl fmt::Display for SmugglexError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
-            SmugglexError::HttpRequest(msg) => write!(f, "HTTP request error: {}", msg),
-            SmugglexError::Tls(msg) => write!(f, "TLS error: {}", msg),
-            SmugglexError::UrlParse(msg) => write!(f, "URL parsing error: {}", msg),
+            SmugglexError::HttpRequest(msg) => {
+                write!(
+                    f,
+                    "HTTP request error: {} (check target connectivity and verify the URL is reachable)",
+                    msg
+                )
+            }
+            SmugglexError::Tls(msg) => {
+                write!(
+                    f,
+                    "TLS error: {} (verify the target supports HTTPS or try with HTTP)",
+                    msg
+                )
+            }
+            SmugglexError::UrlParse(msg) => {
+                write!(
+                    f,
+                    "URL parsing error: {} (ensure the URL includes scheme, e.g. http:// or https://)",
+                    msg
+                )
+            }
             SmugglexError::Io(msg) => write!(f, "I/O error: {}", msg),
             SmugglexError::Json(msg) => write!(f, "JSON error: {}", msg),
-            SmugglexError::Timeout(msg) => write!(f, "Timeout error: {}", msg),
+            SmugglexError::Timeout(msg) => {
+                write!(
+                    f,
+                    "Timeout: {} (try increasing timeout with -t option)",
+                    msg
+                )
+            }
             SmugglexError::InvalidInput(msg) => write!(f, "Invalid input: {}", msg),
         }
     }

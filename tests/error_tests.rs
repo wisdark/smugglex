@@ -13,21 +13,30 @@ use std::io;
 #[test]
 fn test_display_http_request_error() {
     let err = SmugglexError::HttpRequest("connection failed".to_string());
-    assert_eq!(format!("{}", err), "HTTP request error: connection failed");
+    assert_eq!(
+        format!("{}", err),
+        "HTTP request error: connection failed (check target connectivity and verify the URL is reachable)"
+    );
 }
 
 /// Test Display implementation for Tls variant
 #[test]
 fn test_display_tls_error() {
     let err = SmugglexError::Tls("certificate invalid".to_string());
-    assert_eq!(format!("{}", err), "TLS error: certificate invalid");
+    assert_eq!(
+        format!("{}", err),
+        "TLS error: certificate invalid (verify the target supports HTTPS or try with HTTP)"
+    );
 }
 
 /// Test Display implementation for UrlParse variant
 #[test]
 fn test_display_url_parse_error() {
     let err = SmugglexError::UrlParse("invalid URL".to_string());
-    assert_eq!(format!("{}", err), "URL parsing error: invalid URL");
+    assert_eq!(
+        format!("{}", err),
+        "URL parsing error: invalid URL (ensure the URL includes scheme, e.g. http:// or https://)"
+    );
 }
 
 /// Test Display implementation for Io variant
@@ -48,7 +57,10 @@ fn test_display_json_error() {
 #[test]
 fn test_display_timeout_error() {
     let err = SmugglexError::Timeout("request timed out".to_string());
-    assert_eq!(format!("{}", err), "Timeout error: request timed out");
+    assert_eq!(
+        format!("{}", err),
+        "Timeout: request timed out (try increasing timeout with -t option)"
+    );
 }
 
 /// Test Display implementation for InvalidInput variant
